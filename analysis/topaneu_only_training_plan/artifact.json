@@ -1,0 +1,83 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "TopAneu Task 2：仅用当前数据的分阶段训练方案",
+    "description": "基于416例五折OOF误差分解和标签稀疏度制定的可执行训练路线。",
+    "generatedAt": "2026-09-01T12:00:00+08:00",
+    "sources": [
+      {"id":"plan","label":"TopAneu-only方案与切分审计","path":"topaneu_only_data_stage_plan.md","query":{"sql":"SELECT * FROM topaneu_only_stage_plan;","engine":"artifact snapshot","description":"从审核后的阶段方案快照投影训练阶段和上限消融表。","tables_used":["topaneu_only_stage_plan"]}},
+      {"id":"metrics","label":"416例五折OOF诊断指标快照","path":"metrics_snapshot.json","query":{"sql":"SELECT * FROM metrics_snapshot;","engine":"artifact snapshot","description":"二值、component、位置分类、血管和标签稀疏度的审核快照。","tables_used":["metrics_snapshot"]}}
+    ],
+    "cards": [
+      {"id":"binary","dataset":"headline","sourceId":"metrics","description":"忽略位置类别后的瘤分割微平均Dice。","metrics":[{"label":"二值瘤 Dice","field":"binary_dice","format":"percent"}]},
+      {"id":"lesion_recall","dataset":"headline","sourceId":"metrics","description":"401个GT component中与预测相交的比例。","metrics":[{"label":"病灶检出率","field":"lesion_recall","format":"percent"}]},
+      {"id":"exact_loc","dataset":"headline","sourceId":"metrics","description":"已检出病灶中52类位置完全正确的比例。","metrics":[{"label":"条件位置准确率","field":"exact_loc","format":"percent"}]},
+      {"id":"zero_classes","dataset":"headline","sourceId":"metrics","description":"整个416例中没有任何阳性监督的最终位置类。","metrics":[{"label":"全局零样本类别","field":"zero_classes","format":"integer"}]}
+    ],
+    "charts": [
+      {"id":"current_stage_rates","title":"当前管线从检出到精确位置的性能下降","subtitle":"五折OOF；每个比例的分母不同，悬停查看定义","type":"horizontalBar","intent":"comparison","question":"最主要的性能断点在哪里？","rationale":"按管线顺序展示病灶检出、粗血管区域和最终52类位置的成功率。","dataset":"stage_rates","sourceId":"metrics","encodings":{"x":{"field":"stage","type":"ordinal","label":"阶段"},"y":{"field":"rate","type":"quantitative","format":"percent","label":"成功率"},"tooltip":[{"field":"definition","type":"text","label":"口径"}]},"valueFormat":"percent","layout":"full"}
+    ],
+    "tables": [
+      {"id":"stages","title":"严格 TopAneu-only 的训练阶段","subtitle":"每个fold独立完成；达到准入条件后再推进","dataset":"stages","sourceId":"plan","density":"spacious","layout":"full","columns":[
+        {"field":"stage","label":"阶段","type":"text"},
+        {"field":"learn","label":"学习目标与标签","type":"text"},
+        {"field":"freeze","label":"初始化/冻结","type":"text"},
+        {"field":"gate","label":"进入下一阶段条件","type":"text"}
+      ]},
+      {"id":"ablations","title":"component位置模块的四级上限实验","subtitle":"一次只替换一个输入，避免把三种错误混为一谈","dataset":"ablations","sourceId":"plan","density":"spacious","layout":"full","columns":[
+        {"field":"order","label":"顺序","type":"number"},
+        {"field":"component","label":"瘤component","type":"text"},
+        {"field":"vessel","label":"血管输入","type":"text"},
+        {"field":"purpose","label":"回答的问题","type":"text"}
+      ]}
+    ],
+    "blocks": [
+      {"id":"title","type":"markdown","body":"# TopAneu Task 2：仅用当前416例数据的分阶段训练方案","layout":"full"},
+      {"id":"summary","type":"markdown","body":"## 结论\n\n当前方案的方向是对的：**血管解剖、二值瘤分割、component级位置判定必须拆开训练**。但严格只用 TopAneu 时，应删除外部血管/RSNA预训练，并增加一个 TopAneu-only 的全图ROI定位阶段。不要再把52个极稀疏位置当作 voxel-wise 独立类别从头联合训练；先把二值瘤和36类血管分别学稳，再用可组合的解剖属性完成位置映射。","layout":"full"},
+      {"id":"metrics","type":"metric-strip","cardIds":["binary","lesion_recall","exact_loc","zero_classes"],"layout":"full"},
+      {"id":"why","type":"markdown","body":"## 为什么必须分阶段\n\n当前二值瘤 Dice 已有 **61.34%**，401个GT病灶中检出 **269个（67.08%）**；但已检出病灶的52类精确位置仅 **24.54%**。保持预测形状不变、只纠正component类别时，位置micro Dice可从 **8.28%** 上升到 **61.33%**。因此首先要修的是位置表示和监督方式，而不是先给边界损失加权。","layout":"full","sourceId":"metrics"},
+      {"id":"stage_rate_chart","type":"chart","chartId":"current_stage_rates","layout":"full"},
+      {"id":"split","type":"markdown","body":"## 数据切分红线\n\n现有五折的7组纵向病例均保持在同一折，没有患者泄漏；各验证折阳性数稳定为61。但每个训练折仍有 **10–12个零样本位置类**、**25–28类不超过3例**。OOF开发时，每个阶段只能看本折train病例；不能用全部416例训练teacher后再评价这些折。所有结构和阈值确定后，最终提交模型才在416例上重训。","layout":"full","sourceId":"plan"},
+      {"id":"stages_table","type":"table","tableId":"stages","layout":"full"},
+      {"id":"location","type":"markdown","body":"## Stage 3 不是普通52分类\n\n对每个GT或预测瘤component提取局部encoder特征、归一化三维坐标、与36类血管的距离/接触/中心线关系。分类头分别学习 circulation/territory、side、parent vessel 和 trunk/junction/bifurcation/distal，再用固定映射得到52类。52-way输出只作为候选集合内的残差打分。全局零样本的9类不能通过监督学得，只能由这些可组合属性和解剖规则产生候选。","layout":"full","sourceId":"plan"},
+      {"id":"ablation_table","type":"table","tableId":"ablations","layout":"full"},
+      {"id":"schedule","type":"markdown","body":"## 推荐执行节奏\n\n先只做 fold 0：Stage 0/1 各最多200–250 epoch，Stage 2 最多250 epoch，Stage 3 最多150 epoch，均保存 best checkpoint 而不是默认使用最后一轮。先禁用全部镜像；160³、batch 4 可继续作为起点。fold 0 达标后再跑5折。Stage 4局部refiner应最后加入，因为当前132/401个GT病灶完全未检出，边界精修无法补回这些漏检。","layout":"full"},
+      {"id":"gates","type":"markdown","body":"## 建议准入阈值\n\n1. ROI：完整GT瘤被预测crop覆盖率至少 **98%**，否则先扩大物理margin。\n2. Vessel teacher：macro Dice明显超过当前43.02%，且关键小血管零Dice类别数显著下降。\n3. Binary proposal：fold 0病灶召回至少 **75%**，component precision不低于当前64%。\n4. GT component + silver vessel位置上限：精确52类准确率至少 **60%**；否则先修映射、分辨率或标签特征。\n5. 只有pred+pred仍优于当前24.54%且官方Dice/MCC同步上升，才启动完整5折。","layout":"full"},
+      {"id":"limit","type":"markdown","body":"## 只用当前数据的能力边界\n\n9个全局零样本最终类别没有任何正类监督，换loss、增加epoch或增大batch都不能让模型真正学会它们。层级属性能共享 side、parent vessel 和 subtype 的监督，从而允许规则式组合推断，但本地无法验证这些零样本类别的准确率。这个限制需要在实验结论和提交风险中明确保留。","layout":"full","sourceId":"metrics"}
+    ]
+  },
+  "snapshot": {
+    "version":1,
+    "generatedAt":"2026-09-01T12:00:00+08:00",
+    "status":"ready",
+    "datasets": {
+      "headline":[{"binary_dice":0.6134415146932533,"lesion_recall":0.6708229426433915,"exact_loc":0.24535315985130113,"zero_classes":9}],
+      "stage_rates":[
+        {"stage":"GT病灶空间检出","rate":0.6708229426433915,"definition":"269/401个GT component与预测至少一个体素相交"},
+        {"stage":"已检出病灶粗territory正确","rate":0.7137546468401487,"definition":"在269个已检出GT病灶中，192个血管家族正确"},
+        {"stage":"已检出病灶52类位置正确","rate":0.24535315985130113,"definition":"在269个已检出GT病灶中，66个最终位置ID正确"}
+      ],
+      "stages":[
+        {"stage":"0 全图ROI定位","learn":"36类血管/union mask → 预测bbox+margin","freeze":"独立训练；不使用外部Stage-1权重","gate":"完整瘤crop recall ≥98%"},
+        {"stage":"1 血管teacher","learn":"36类vessel银标准；Dice+CE；稀有血管采样","freeze":"Stage 0 encoder可选；本阶段单任务","gate":"macro Dice >43.0%，关键小血管恢复"},
+        {"stage":"2 二值瘤proposal","learn":"52类mask并为binary；type mask低权重辅助","freeze":"加载Stage 1 encoder；先冻结50 epoch再逐层解冻","gate":"lesion recall ≥75%，component precision ≥64%"},
+        {"stage":"3 层级位置分类","learn":"component的territory/side/parent/subtype → 52映射","freeze":"先冻结Stage 1/2，仅训分类头","gate":"GT component上限准确率 ≥60%"},
+        {"stage":"4 输入替换与联合微调","learn":"逐步换成pred vessel与pred component","freeze":"先头部，再小学习率解冻encoder末两级","gate":"pred+pred显著优于24.5%"},
+        {"stage":"5 局部高分辨率refiner","learn":"原分辨率局部binary边界和FP判别","freeze":"粗模型冻结；精修器独立训练","gate":"官方Dice/HD95同时改善"},
+        {"stage":"6 端到端校准","learn":"阈值、component过滤、原空间还原","freeze":"不再改网络；训练折选择参数","gate":"5折OOF稳定后全416例重训"}
+      ],
+      "ablations":[
+        {"order":1,"component":"GT","vessel":"silver/GT","purpose":"判断层级标签和映射本身的理论上限"},
+        {"order":2,"component":"GT","vessel":"predicted","purpose":"量化血管teacher错误造成的损失"},
+        {"order":3,"component":"predicted","vessel":"silver/GT","purpose":"量化瘤proposal形状与漏检造成的损失"},
+        {"order":4,"component":"predicted","vessel":"predicted","purpose":"得到真实端到端位置性能"}
+      ]
+    }
+  },
+  "sources": [
+    {"id":"plan","label":"TopAneu-only方案与切分审计","path":"topaneu_only_data_stage_plan.md","query":{"sql":"SELECT * FROM topaneu_only_stage_plan;","engine":"artifact snapshot","description":"从审核后的阶段方案快照投影训练阶段和上限消融表。","tables_used":["topaneu_only_stage_plan"]}},
+    {"id":"metrics","label":"416例五折OOF诊断指标快照","path":"metrics_snapshot.json","query":{"sql":"SELECT * FROM metrics_snapshot;","engine":"artifact snapshot","description":"二值、component、位置分类、血管和标签稀疏度的审核快照。","tables_used":["metrics_snapshot"]}}
+  ]
+}

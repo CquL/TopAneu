@@ -1,0 +1,42 @@
+{
+  "num_cases": 416,
+  "num_positive_cases": 305,
+  "num_negative_cases": 111,
+  "presence": {
+    "tp": 256,
+    "fp": 23,
+    "fn": 49,
+    "tn": 88,
+    "precision": 0.9175627240143369,
+    "recall": 0.839344262295082,
+    "specificity": 0.7927927927927928
+  },
+  "binary_segmentation": {
+    "micro_dice": 0.6134415146932533,
+    "micro_precision": 0.7889272327006605,
+    "micro_recall": 0.5018189731435356,
+    "mean_dice_positive_cases": 0.49239399974083914,
+    "median_dice_positive_cases": 0.625
+  },
+  "component_detection": {
+    "pred_components": 419,
+    "gt_components": 401,
+    "pred_overlap_components": 269,
+    "pred_fp_components": 150,
+    "gt_detected_components": 269,
+    "pred_component_spatial_precision": 0.6420047732696897,
+    "gt_lesion_detection_recall": 0.6708229426433915
+  },
+  "location_given_overlap": {
+    "exact_accuracy_pred_component_grain": 0.241635687732342,
+    "territory_accuracy_pred_component_grain": 0.7063197026022305,
+    "side_accuracy_when_both_lateralized": 0.7263157894736842,
+    "exact_accuracy_detected_gt_lesion_grain": 0.24535315985130113,
+    "territory_accuracy_detected_gt_lesion_grain": 0.7137546468401487
+  },
+  "voxel_location": {
+    "current_micro_dice": 0.08276394507270725,
+    "oracle_relabel_micro_dice": 0.6132622405223239,
+    "oracle_definition": "Each predicted binary component that overlaps GT is relabeled to its dominant overlapping GT location; pure spatial false positives are retained."
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "TopAneu Task 2：V2 五折误差诊断与下一步实验",
+    "description": "基于 416 例 OOF 输出、官方 Task 2 评估和训练实现审计的技术诊断。",
+    "generatedAt": "2026-08-30T22:41:28+08:00",
+    "sources": [
+      {"id": "official", "label": "官方 Task 2 OOF 指标快照", "path": "official_metrics_snapshot.json", "query": {"sql": "SELECT dice AS official_dice, hd95 AS official_hd95 FROM official_metrics_snapshot;", "engine": "artifact snapshot", "description": "从官方评估输出的审核快照中投影位置 Dice 与 HD95。", "tables_used": ["official_metrics_snapshot"], "metric_definitions": ["Dice 与 HD95 均沿用 TopAneu-26 eval/task2/evaluate.py 的聚合定义"]}},
+      {"id": "decomposition", "label": "416 例 OOF 误差分解", "path": "oof_error_decomposition.json", "query": {"sql": "SELECT * FROM oof_error_decomposition;", "engine": "artifact snapshot", "description": "在 160³ ROI 空间逐例分解二值体素、component 检出与条件位置分类。", "language": "Python", "tables_used": ["OOF location masks", "Dataset503 labelsTr", "oof_error_decomposition"], "filters": ["五折验证集恰好覆盖 416 例且每例只出现一次"], "metric_definitions": ["病灶检出：预测前景 component 与 GT location component 至少一个体素相交", "位置条件准确率：仅在发生空间相交的病灶上计算", "oracle relabel：保持预测形状与纯空间 FP 不变，只纠正重叠 component 的位置类别"]}},
+      {"id": "vessels", "label": "36 类血管 OOF 指标", "path": "oof_vessel_metrics.json", "query": {"sql": "SELECT macro_dice_36_classes, micro_exact_class_dice FROM oof_vessel_metrics;", "engine": "artifact snapshot", "description": "从 416 例 OOF 血管混淆矩阵投影宏平均与微平均 Dice。", "tables_used": ["oof_vessel_metrics"]}},
+      {"id": "augmentation", "label": "空间增强实现审计", "path": "augmentation_audit.md"},
+      {"id": "labels", "label": "TopAneu 训练标签稀疏度", "path": "dataset_label_stats.json", "query": {"sql": "SELECT * FROM dataset_label_stats;", "engine": "artifact snapshot", "description": "从 416 例训练元数据汇总 52 类阳性样本频次。", "tables_used": ["dataset_label_stats"]}}
+    ],
+    "cards": [
+      {"id": "official_dice", "dataset": "headline", "sourceId": "official", "description": "官方按 52 个位置类别聚合的 Dice。", "metrics": [{"label": "官方位置 Dice", "field": "official_dice", "format": "percent"}]},
+      {"id": "official_hd95", "dataset": "headline", "sourceId": "official", "description": "官方归一化 HD95；越低越好，FP/FN 会接近最差值 1。", "metrics": [{"label": "官方 HD95", "field": "official_hd95", "format": "percent"}]},
+      {"id": "binary_dice", "dataset": "headline", "sourceId": "decomposition", "description": "忽略位置类别后的二值瘤体素微平均 Dice。", "metrics": [{"label": "二值瘤 micro Dice", "field": "binary_dice", "format": "percent"}]},
+      {"id": "location_accuracy", "dataset": "headline", "sourceId": "decomposition", "description": "仅在已与 GT 空间相交的病灶中，52 类位置完全正确的比例。", "metrics": [{"label": "条件位置准确率", "field": "location_accuracy", "format": "percent"}]},
+      {"id": "vessel_dice", "dataset": "headline", "sourceId": "vessels", "description": "36 个血管类别等权平均的 OOF Dice。", "metrics": [{"label": "血管 macro Dice", "field": "vessel_dice", "format": "percent"}]}
+    ],
+    "charts": [
+      {
+        "id": "pipeline_rates",
+        "title": "当前 OOF 管线各阶段成功率",
+        "subtitle": "416 例五折 OOF；各条的分母不同，详见数据列和方法说明",
+        "type": "horizontalBar",
+        "intent": "comparison",
+        "question": "性能主要在哪一阶段下降？",
+        "rationale": "按处理阶段排列的水平条形图直接显示从病例存在性、病灶检出到精确位置的断崖。",
+        "dataset": "stage_rates",
+        "sourceId": "decomposition",
+        "encodings": {
+          "x": {"field": "stage", "type": "ordinal", "label": "阶段"},
+          "y": {"field": "rate", "type": "quantitative", "format": "percent", "label": "成功率"},
+          "tooltip": [
+            {"field": "numerator", "type": "quantitative", "label": "分子"},
+            {"field": "denominator", "type": "quantitative", "label": "分母"},
+            {"field": "definition", "type": "text", "label": "定义"}
+          ]
+        },
+        "valueFormat": "percent",
+        "layout": "full"
+      }
+    ],
+    "tables": [
+      {
+        "id": "priorities",
+        "title": "建议实验队列",
+        "subtitle": "先用单 fold 证伪高风险实现问题，再投入多折和外部数据",
+        "dataset": "priorities",
+        "sourceId": "decomposition",
+        "defaultSort": {"field": "priority", "direction": "asc"},
+        "density": "spacious",
+        "layout": "full",
+        "columns": [
+          {"field": "priority", "label": "优先级", "type": "number"},
+          {"field": "experiment", "label": "实验", "type": "text"},
+          {"field": "why", "label": "证据", "type": "text"},
+          {"field": "go_no_go", "label": "进入下一步条件", "type": "text"}
+        ]
+      }
+    ],
+    "blocks": [
+      {"id": "title", "type": "markdown", "body": "# TopAneu Task 2：V2 五折误差诊断与下一步实验", "layout": "full"},
+      {"id": "summary", "type": "markdown", "body": "## 技术结论\n\n下一步不应立即重做整个四阶段网络，也不应先上 Hausdorff loss。当前瘤的二值形状已有可用信号，真正的主瓶颈是 **component 的 52 类位置赋值**；同时，现有五折训练包含确定性的镜像标签语义冲突。最优先动作是新建一个禁用镜像的 trainer，只重跑 fold 0，验证位置分类和左右血管是否显著恢复。通过后，再把全局 52-way multilabel 头升级为 component 级分层分类器。", "layout": "full"},
+      {"id": "headline_strip", "type": "metric-strip", "cardIds": ["official_dice", "official_hd95", "binary_dice", "location_accuracy", "vessel_dice"], "layout": "full"},
+      {"id": "finding_location", "type": "markdown", "body": "## 形状不是首要瓶颈，精确位置赋值才是\n\n当前二值瘤 micro Dice 为 **61.34%**，但位置 micro Dice 只有 **8.28%**。保持每个预测 component 的形状不变，只把与 GT 重叠的 component 改成正确位置类别，位置 micro Dice 可达到 **61.33%**。病灶被空间检出后，粗 territory 正确率为 **71.38%**，精确 52 类正确率却只有 **24.54%**。这说明当前解剖信息已经能把候选缩到血管家族，但无法稳定区分同一母血管上的 trunk、junction、bifurcation 和 distal。", "layout": "full", "sourceId": "decomposition"},
+      {"id": "stage_chart", "type": "chart", "chartId": "pipeline_rates", "layout": "full"},
+      {"id": "finding_detection", "type": "markdown", "body": "## 二值提议仍需提升召回和抑制假阳性\n\n401 个 GT 病灶中有 269 个被至少一个预测 component 相交，病灶级召回 **67.08%**。419 个预测 component 中仅 269 个与 GT 相交，空间 precision **64.20%**，其余 150 个为纯空间 FP。二值体素 micro precision 为 **78.89%**，recall 只有 **50.18%**，因此当前更偏向欠分割/漏检；仅修边界不会解决 132 个未命中的 GT 病灶。", "layout": "full", "sourceId": "decomposition"},
+      {"id": "finding_vessel", "type": "markdown", "body": "## 血管先验目前过粗，细小分支没有形成可靠监督\n\n36 类血管 macro Dice 为 **43.02%**，虽然体素加权的精确类别 micro Dice 为 **67.21%**，但有 11 个血管类别 OOF Dice 为 0。这意味着大血管主干主导了 micro 指标，而 Pcom、Acom、AICA、AChA、OA 等细支正是区分 TopAneu junction 类别所需要的结构。现阶段不能把预测血管 mask 当成接近真值的先验。", "layout": "full", "sourceId": "vessels"},
+      {"id": "augmentation_finding", "type": "markdown", "body": "## 当前三轴镜像会制造左右位置的错误监督\n\n416 例方向记录一致，网络 axis 2 对应患者左右轴。五个最终 checkpoint 均记录三轴镜像；普通 `MirrorTransform` 只翻转影像和 mask 的空间位置，不交换 R/L 类别 ID，而全局 52 标签也不交换。因此，镜像样本可以在体素左侧显示 R-ICA/R-MCA，却继续要求模型输出右侧类别。这会同时削弱左右血管分割、全局位置分类和依赖二者的 component assignment。当前 Docker 已关闭推理镜像，问题限定在训练阶段。", "layout": "full", "sourceId": "augmentation"},
+      {"id": "sparsity_finding", "type": "markdown", "body": "## 52-way 独立分类无法覆盖当前长尾\n\n52 类中有 **9 类零训练样本**，**24 类不超过 3 个阳性样本**，类别阳性数中位数仅 **4.5**。现有后处理也只有 46 种唯一 parent-vessel candidate 签名，12 个类别落在完全相同的候选签名中。单靠 36 类母血管距离和一个全局 52-way BCE 头，无法可靠区分这些同血管亚型；必须共享 side、territory、branch relation 和 subtype 的监督。", "layout": "full", "sourceId": "labels"},
+      {"id": "method", "type": "markdown", "body": "## 计算口径与限制\n\n诊断使用五折 OOF 的 160³ ROI 输出，每例只出现一次。二值和 component 指标在 ROI 空间计算；官方 Precision、Recall、MCC、Dice、VolSim、HD95 来自将 ROI 还原到原始数组后直接调用官方 `eval/task2/evaluate.py`。`oracle relabel` 不是可提交结果，而是隔离位置标签错误的上限实验：保留现有预测形状和纯空间 FP，仅纠正与 GT 相交 component 的类别。当前结果仍基于 GT 派生的 Stage-2 ROI；已完成的 Docker Stage-1 链路证明流程可运行，但尚未在 416 例上测量真实 crop recall。", "layout": "full"},
+      {"id": "next_header", "type": "markdown", "body": "## 下一轮按这个顺序做\n\n先完成优先级 0–2；在 fold 0 证明位置监督恢复之前，不建议再耗费四张卡跑完整五折。", "layout": "full"},
+      {"id": "priority_table", "type": "table", "tableId": "priorities", "layout": "full"},
+      {"id": "design_detail", "type": "markdown", "body": "## V2.2 的最小结构改造\n\n保留当前 160³ encoder、36 类 vessel decoder 和 binary aneurysm decoder。新增的不是另一个 52 类 voxel decoder，而是对每个 aneurysm component 提取：局部 encoder feature、vessel masked pooling、component centroid 的归一化坐标、与每类血管的距离/接触、分叉点和中心线特征。分类头依次预测 circulation/territory、side、parent vessel、trunk-vs-junction-vs-distal subtype，并用确定性映射得到 52 类；52-way fine head 只作为最后的残差分数。训练时先用 GT component + GT/silver vessel 做分类上限，再逐步替换为 predicted component 和 predicted vessel。", "layout": "full"},
+      {"id": "external_data", "type": "markdown", "body": "## 外部数据放在结构验证之后\n\nRSNA 点标注适合预训练 aneurysm objectness/heatmap 和困难负样本，不应直接当成真实瘤囊 mask 优化最终 Dice。TopCoW/TopBrain 适合预训练细血管 teacher；TopAneu 自带 vessel mask 已经用于当前训练，但属于银标准。外部数据的第一目标应是提高小血管和病灶召回，不是直接填充零样本的 52 类终标签。零样本类别最终仍需要组合式解剖规则、外部同类病例或开放词表/属性式推断。", "layout": "full"},
+      {"id": "questions", "type": "markdown", "body": "## 后续必须回答的三个问题\n\n1. 禁用镜像后，fold 0 的条件精确位置准确率能否从 24.5% 提升到至少 35%，且左右血管 Dice 同步提升？\n2. 使用 GT component + GT vessel 时，分层 component classifier 的 52 类准确率上限是多少？若仍低，说明 160³ 分辨率或标签定义本身不足。\n3. 真实 Stage-1 crop 在 416 例中包含完整 GT 瘤的比例是多少？只有该 recall 足够高，局部 Stage-2 改进才能转化为 Docker 成绩。", "layout": "full"}
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-08-30T22:41:28+08:00",
+    "status": "ready",
+    "datasets": {
+      "headline": [{"official_dice": 0.026828285542817673, "official_hd95": 0.7735283119958756, "binary_dice": 0.6134415146932533, "location_accuracy": 0.24535315985130113, "vessel_dice": 0.43018034363381774}],
+      "stage_rates": [
+        {"stage": "病例 presence 召回", "rate": 0.839344262295082, "numerator": 256, "denominator": 305, "definition": "阳性病例中输出至少一个 component"},
+        {"stage": "GT 病灶空间检出", "rate": 0.6708229426433915, "numerator": 269, "denominator": 401, "definition": "GT component 与预测前景至少一个体素相交"},
+        {"stage": "预测 component 空间 precision", "rate": 0.6420047732696897, "numerator": 269, "denominator": 419, "definition": "预测 component 与任一 GT 病灶相交"},
+        {"stage": "已检出病灶 territory 正确", "rate": 0.7137546468401487, "numerator": 192, "denominator": 269, "definition": "VA/BA、PCA、ICA、ACA、MCA 家族正确"},
+        {"stage": "已检出病灶 52 类精确正确", "rate": 0.24535315985130113, "numerator": 66, "denominator": 269, "definition": "最终位置 ID 完全正确"}
+      ],
+      "priorities": [
+        {"priority": 0, "experiment": "禁用全部镜像，fresh fold-0 对照", "why": "当前三轴镜像未做 R/L 标签交换，监督存在确定性冲突", "go_no_go": "条件位置准确率 ≥35%，且官方 Dice/MCC 明显高于原 fold 0"},
+        {"priority": 1, "experiment": "导出 binary probability，做 OOF 阈值与 component 过滤", "why": "419 个预测 component 中 150 个纯 FP，病灶召回只有 67.1%", "go_no_go": "在病灶召回下降不超过 3 个百分点时，component precision 提升 ≥10 个百分点"},
+        {"priority": 2, "experiment": "GT component + GT vessel 的分层位置分类上限", "why": "territory 已达 71.4%，精确位置只有 24.5%", "go_no_go": "52 类准确率 ≥60%；否则先提升分辨率/标签特征"},
+        {"priority": 3, "experiment": "predicted component + GT vessel / predicted vessel 两级替换", "why": "区分位置分类错误与血管先验错误", "go_no_go": "量化每次替换的准确率损失后再决定是否训练独立 vessel teacher"},
+        {"priority": 4, "experiment": "外部血管预训练与 RSNA heatmap objectness", "why": "11/36 血管类 Dice 为 0，二值病灶仍漏检 132/401", "go_no_go": "小血管 macro Dice 和病灶召回均提升，再跑完整五折"},
+        {"priority": 5, "experiment": "416 例真实 Stage-1 crop recall 与端到端官方评估", "why": "当前 OOF Stage 2 使用 GT 派生 ROI", "go_no_go": "完整 GT 瘤 crop recall 接近 100%，再更新提交 Docker"}
+      ]
+    }
+  },
+  "sources": [
+    {"id": "official", "label": "官方 Task 2 OOF 指标快照", "path": "official_metrics_snapshot.json", "query": {"sql": "SELECT dice AS official_dice, hd95 AS official_hd95 FROM official_metrics_snapshot;", "engine": "artifact snapshot", "description": "从官方评估输出的审核快照中投影位置 Dice 与 HD95。", "tables_used": ["official_metrics_snapshot"]}},
+    {"id": "decomposition", "label": "416 例 OOF 误差分解", "path": "oof_error_decomposition.json", "query": {"sql": "SELECT * FROM oof_error_decomposition;", "engine": "artifact snapshot", "description": "在 160³ ROI 空间逐例分解二值体素、component 检出与条件位置分类。", "tables_used": ["oof_error_decomposition"]}},
+    {"id": "vessels", "label": "36 类血管 OOF 指标", "path": "oof_vessel_metrics.json", "query": {"sql": "SELECT macro_dice_36_classes, micro_exact_class_dice FROM oof_vessel_metrics;", "engine": "artifact snapshot", "description": "从 416 例 OOF 血管混淆矩阵投影宏平均与微平均 Dice。", "tables_used": ["oof_vessel_metrics"]}},
+    {"id": "augmentation", "label": "空间增强实现审计", "path": "augmentation_audit.md"},
+    {"id": "labels", "label": "TopAneu 训练标签稀疏度", "path": "dataset_label_stats.json", "query": {"sql": "SELECT * FROM dataset_label_stats;", "engine": "artifact snapshot", "description": "从 416 例训练元数据汇总 52 类阳性样本频次。", "tables_used": ["dataset_label_stats"]}}
+  ]
+}

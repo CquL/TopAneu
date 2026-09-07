@@ -1,0 +1,14 @@
+{
+  "cases": 416,
+  "positive_cases": 305,
+  "negative_cases": 111,
+  "binary_micro_dice": 0.6134415146932533,
+  "gt_lesion_components": 401,
+  "detected_gt_lesion_components": 269,
+  "lesion_recall": 0.6708229426433915,
+  "conditional_exact_location_accuracy": 0.24535315985130113,
+  "oracle_relabel_micro_dice": 0.613262,
+  "global_zero_sample_location_classes": 9,
+  "location_classes_with_at_most_3_positive_cases": 24,
+  "vessel_macro_dice": 0.43018034363381774
+}

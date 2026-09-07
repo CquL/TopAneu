@@ -1,0 +1,14 @@
+{
+  "num_cases": 416,
+  "positive_cases": 305,
+  "negative_cases": 111,
+  "positive_case_location_labels": 387,
+  "num_location_classes": 52,
+  "zero_sample_classes": 9,
+  "classes_with_at_most_1_positive": 16,
+  "classes_with_at_most_3_positives": 24,
+  "classes_with_at_most_5_positives": 28,
+  "median_positives_per_class": 4.5,
+  "max_positives_per_class": 44,
+  "zero_sample_class_ids": [3, 9, 10, 12, 13, 14, 18, 20, 52]
+}

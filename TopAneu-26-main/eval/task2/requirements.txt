@@ -1,0 +1,6 @@
+SimpleITK
+scipy
+
+numpy
+
+psutil

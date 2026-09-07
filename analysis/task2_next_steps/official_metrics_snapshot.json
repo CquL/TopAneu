@@ -1,0 +1,12 @@
+{
+  "source": "TopAneu-26 official eval/task2/evaluate.py on 416 OOF predictions",
+  "precision": 0.09549187479136177,
+  "recall": 0.07945221858404788,
+  "mcc": 0.06849177478450658,
+  "dice": 0.026828285542817673,
+  "volsim": 0.03400175411167283,
+  "hd95": 0.7735283119958756,
+  "location_tp": 66,
+  "location_fp": 287,
+  "location_fn": 321
+}
