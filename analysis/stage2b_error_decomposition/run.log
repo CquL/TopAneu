@@ -1,0 +1,256 @@
+fold 0: 84 validation cases
+fold 1: 83 validation cases
+fold 2: 83 validation cases
+fold 3: 83 validation cases
+fold 4: 83 validation cases
+
+====================================================
+OVERALL
+====================================================
+{
+  "cases": 416,
+  "positive_cases": 305,
+  "micro_dice": 0.5658578623638467,
+  "micro_precision": 0.8013832136694057,
+  "micro_recall": 0.43732784889493936,
+  "mean_positive_case_dice": 0.4346583122309947,
+  "gt_lesions": 393,
+  "detected_lesions": 257,
+  "lesion_recall": 0.6539440203562341,
+  "pred_components": 367,
+  "fp_components": 100,
+  "mean_finite_hd95_mm": 13.47461152124803
+}
+
+====================================================
+BY FOLD
+====================================================
+
+fold 0
+{
+  "cases": 84,
+  "positive_cases": 61,
+  "micro_dice": 0.32049248565044036,
+  "micro_precision": 0.739341379101219,
+  "micro_recall": 0.20458931658117172,
+  "mean_positive_case_dice": 0.4326235803060025,
+  "gt_lesions": 79,
+  "detected_lesions": 54,
+  "lesion_recall": 0.6835443037974683,
+  "pred_components": 78,
+  "fp_components": 21,
+  "mean_finite_hd95_mm": 13.774269314138685
+}
+
+fold 1
+{
+  "cases": 83,
+  "positive_cases": 61,
+  "micro_dice": 0.6114442310394903,
+  "micro_precision": 0.8790154219139336,
+  "micro_recall": 0.4687556114203627,
+  "mean_positive_case_dice": 0.4282972728949189,
+  "gt_lesions": 80,
+  "detected_lesions": 51,
+  "lesion_recall": 0.6375,
+  "pred_components": 70,
+  "fp_components": 19,
+  "mean_finite_hd95_mm": 16.530542998416664
+}
+
+fold 2
+{
+  "cases": 83,
+  "positive_cases": 61,
+  "micro_dice": 0.7564529955233832,
+  "micro_precision": 0.8178289661290834,
+  "micro_recall": 0.7036461527976555,
+  "mean_positive_case_dice": 0.4406356352785702,
+  "gt_lesions": 80,
+  "detected_lesions": 57,
+  "lesion_recall": 0.7125,
+  "pred_components": 70,
+  "fp_components": 12,
+  "mean_finite_hd95_mm": 6.222952992555412
+}
+
+fold 3
+{
+  "cases": 83,
+  "positive_cases": 61,
+  "micro_dice": 0.718391383128649,
+  "micro_precision": 0.8666585706478839,
+  "micro_recall": 0.6134439334680019,
+  "mean_positive_case_dice": 0.45515997882390247,
+  "gt_lesions": 73,
+  "detected_lesions": 47,
+  "lesion_recall": 0.6438356164383562,
+  "pred_components": 72,
+  "fp_components": 24,
+  "mean_finite_hd95_mm": 16.642955356013776
+}
+
+fold 4
+{
+  "cases": 83,
+  "positive_cases": 61,
+  "micro_dice": 0.7002077082852527,
+  "micro_precision": 0.7513465546773428,
+  "micro_recall": 0.655586567029801,
+  "mean_positive_case_dice": 0.41657509385157937,
+  "gt_lesions": 81,
+  "detected_lesions": 48,
+  "lesion_recall": 0.5925925925925926,
+  "pred_components": 77,
+  "fp_components": 24,
+  "mean_finite_hd95_mm": 14.085638248376924
+}
+
+====================================================
+BY MODALITY
+====================================================
+
+CTA
+{
+  "cases": 109,
+  "positive_cases": 109,
+  "micro_dice": 0.7740093409052232,
+  "micro_precision": 0.9005852241892665,
+  "micro_recall": 0.6786290589977674,
+  "mean_positive_case_dice": 0.4660232625394693,
+  "gt_lesions": 140,
+  "detected_lesions": 95,
+  "lesion_recall": 0.6785714285714286,
+  "pred_components": 137,
+  "fp_components": 35,
+  "mean_finite_hd95_mm": 11.84191081868783
+}
+
+MRA
+{
+  "cases": 307,
+  "positive_cases": 196,
+  "micro_dice": 0.496319318105249,
+  "micro_precision": 0.7578889153263925,
+  "micro_recall": 0.36897520107448445,
+  "mean_positive_case_dice": 0.41721555925332265,
+  "gt_lesions": 253,
+  "detected_lesions": 162,
+  "lesion_recall": 0.6403162055335968,
+  "pred_components": 230,
+  "fp_components": 65,
+  "mean_finite_hd95_mm": 14.391030625265692
+}
+
+====================================================
+BY CENTER
+====================================================
+
+center1
+{
+  "cases": 199,
+  "positive_cases": 88,
+  "micro_dice": 0.42537140204271123,
+  "micro_precision": 0.8991658488714426,
+  "micro_recall": 0.27858011553663725,
+  "mean_positive_case_dice": 0.2756792260230188,
+  "gt_lesions": 113,
+  "detected_lesions": 60,
+  "lesion_recall": 0.5309734513274337,
+  "pred_components": 87,
+  "fp_components": 24,
+  "mean_finite_hd95_mm": 16.055938058597985
+}
+
+center2
+{
+  "cases": 87,
+  "positive_cases": 87,
+  "micro_dice": 0.7812546685206679,
+  "micro_precision": 0.7956370105095616,
+  "micro_recall": 0.7673830594184576,
+  "mean_positive_case_dice": 0.49593153911572363,
+  "gt_lesions": 119,
+  "detected_lesions": 78,
+  "lesion_recall": 0.6554621848739496,
+  "pred_components": 100,
+  "fp_components": 22,
+  "mean_finite_hd95_mm": 11.831242892855197
+}
+
+center4
+{
+  "cases": 62,
+  "positive_cases": 62,
+  "micro_dice": 0.746578628065126,
+  "micro_precision": 0.922224287772459,
+  "micro_recall": 0.6271352495930976,
+  "mean_positive_case_dice": 0.4829008355237129,
+  "gt_lesions": 79,
+  "detected_lesions": 57,
+  "lesion_recall": 0.7215189873417721,
+  "pred_components": 91,
+  "fp_components": 27,
+  "mean_finite_hd95_mm": 11.891302773606412
+}
+
+center5
+{
+  "cases": 68,
+  "positive_cases": 68,
+  "micro_dice": 0.48424596260433894,
+  "micro_precision": 0.7570604054772564,
+  "micro_recall": 0.3559689270858998,
+  "mean_positive_case_dice": 0.5180164358071999,
+  "gt_lesions": 82,
+  "detected_lesions": 62,
+  "lesion_recall": 0.7560975609756098,
+  "pred_components": 89,
+  "fp_components": 27,
+  "mean_finite_hd95_mm": 14.072973538759955
+}
+
+====================================================
+BY LESION SIZE
+====================================================
+
+<10 mm3
+{
+  "lesions": 8,
+  "detected": 2,
+  "detection_recall": 0.25,
+  "mean_lesion_voxel_recall": 0.25,
+  "median_volume_mm3": 5.5
+}
+
+10-49 mm3
+{
+  "lesions": 87,
+  "detected": 23,
+  "detection_recall": 0.26436781609195403,
+  "mean_lesion_voxel_recall": 0.12847940179404327,
+  "median_volume_mm3": 31.0
+}
+
+50-199 mm3
+{
+  "lesions": 165,
+  "detected": 116,
+  "detection_recall": 0.703030303030303,
+  "mean_lesion_voxel_recall": 0.35768114244232996,
+  "median_volume_mm3": 96.0
+}
+
+>=200 mm3
+{
+  "lesions": 133,
+  "detected": 116,
+  "detection_recall": 0.8721804511278195,
+  "mean_lesion_voxel_recall": 0.5350124231342752,
+  "median_volume_mm3": 551.0
+}
+
+Saved:
+/data/cyf/codes/TopAneu/analysis/stage2b_error_decomposition/stage2b_case_metrics.csv
+/data/cyf/codes/TopAneu/analysis/stage2b_error_decomposition/stage2b_lesion_metrics.csv
+/data/cyf/codes/TopAneu/analysis/stage2b_error_decomposition/stage2b_error_summary.json
