@@ -1,0 +1,12 @@
+{
+    "channel_names": {
+        "0": "img"
+    },
+    "labels": {
+        "background": 0,
+        "vessel_3d_box": 1
+    },
+    "numTraining": 19386,
+    "file_ending": ".nii.gz",
+    "overwrite_image_reader_writer": "SimpleITKIO"
+}

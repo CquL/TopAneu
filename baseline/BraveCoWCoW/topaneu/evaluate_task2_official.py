@@ -41,7 +41,12 @@ def restore_prediction(prediction_path: Path, transform_path: Path) -> np.ndarra
     upper = np.asarray(meta["crop_upper_zyx_exclusive"], dtype=int)
     crop_shape = upper - lower
     restored_crop = resize_nearest(pred, crop_shape)
-    source_shape = tuple(reversed(meta["source_size_xyz"]))
+    if "source_size_xyz" in meta:
+        source_shape = tuple(reversed(meta["source_size_xyz"]))
+    elif "source_shape_zyx" in meta:
+        source_shape = tuple(meta["source_shape_zyx"])
+    else:
+        raise KeyError(f"ROI transform lacks source shape: {transform_path}")
     restored = np.zeros(source_shape, dtype=np.uint8)
     restored[tuple(slice(int(a), int(b)) for a, b in zip(lower, upper))] = restored_crop
     return restored
