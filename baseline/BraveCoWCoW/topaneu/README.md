@@ -105,3 +105,22 @@ bash topaneu/train_aneurysm_fold.sh FOLD GPU VESSEL_CHECKPOINT
 ```
 
 Both stages use 250 epochs and write to separate trainer result directories.
+
+## Lock experiment provenance
+
+Before generating OOF predictions or calibrating component post-processing,
+create a provenance manifest. It records the repository/evaluator versions,
+split membership, preprocessing and restoration protocol, and the exact
+checkpoint selected for every fold. Existing manifests are immutable unless
+`--force` is supplied. Checkpoint hashes are optional because hashing all
+850-MB checkpoints can take several minutes.
+
+```bash
+python topaneu/create_experiment_manifest.py \
+  --stage1-checkpoint "$TOPANEU_STAGE1_MODEL_DIR/fold_0/checkpoint_final.pth"
+```
+
+The default output is
+`/data/cyf/shared_data/TopAneu/BraveCoWCoW_predroi_160/stagec_pred_oof_v2/experiment_manifest.json`.
+For a content-level checkpoint lock, add `--hash-checkpoints`; to explicitly
+replace a previously locked manifest, use `--force`.
