@@ -57,14 +57,14 @@ def evaluate_one(args):
     prediction_path = Path(prediction_path)
     case = prediction_path.name.removesuffix(".nii.gz")
     prediction = restore_prediction(prediction_path, Path(transform_dir) / f"{case}.json")
-    gt = sitk.GetArrayFromImage(
-        sitk.ReadImage(str(Path(ground_truth_dir) / f"{case}.nii.gz"))
-    ).astype(np.uint8)
-    if prediction.shape != gt.shape:
-        raise ValueError(f"{case}: prediction={prediction.shape}, gt={gt.shape}")
+    gt_path = Path(ground_truth_dir) / f"{case}.nii.gz"
+    gt_image = sitk.ReadImage(str(gt_path))
+    if prediction.shape != sitk.GetArrayFromImage(gt_image).shape:
+        raise ValueError(f"{case}: prediction={prediction.shape}, gt={sitk.GetArrayFromImage(gt_image).shape}")
     official = load_official(Path(official_path))
-    official.load_gt = lambda _filename: gt
-    return case, official.evaluation_function(prediction, f"{case}_0000.mha")
+    pred_image = sitk.GetImageFromArray(prediction)
+    pred_image.CopyInformation(gt_image)
+    return case, official.evaluation_function(pred_image, gt_path, execute_in_docker=False)
 
 
 def native(value):
@@ -120,26 +120,19 @@ def main():
     metrics_per_case = [metrics for _, metrics in results]
     aggregates = official.evaluation_aggregation(metrics_per_case)
     averages = official.evaluation_average(aggregates)
-    # HD95 is an error (lower is better). This normalized utility is useful for
-    # a single descriptive number, but is not emitted by the official evaluator.
-    descriptive_score = (
-        averages["PRECISION"] + averages["RECALL"] + averages["MCC"]
-        + averages["DICE"] + averages["VOLSIM"] + (1.0 - averages["HD95"])
-    ) / 6.0
     payload = native({
         "evaluation": "TopAneu-26 official eval/task2/evaluate.py",
         "num_oof_cases": len(results),
         "prediction_space": "fixed-size ROI restored to original image array",
         "prediction_subdir": args.prediction_subdir,
         "aggregates_avg": averages,
-        "descriptive_score_with_one_minus_hd95": descriptive_score,
+        "official_metrics": ["PRECISION", "RECALL", "F1", "MCC", "DICE", "HD95", "VOLSIM"],
         "aggregates_per_locations": aggregates,
         "case_to_fold": {case: fold_by_case[f"{case}.nii.gz"] for case, _ in results},
     })
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, indent=2))
     print(json.dumps(payload["aggregates_avg"], indent=2))
-    print("descriptive_score_with_one_minus_hd95:", payload["descriptive_score_with_one_minus_hd95"])
     print("saved:", args.output)
 
 
