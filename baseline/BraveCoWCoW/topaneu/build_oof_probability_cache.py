@@ -86,7 +86,9 @@ def pad_to_patch(data: np.ndarray, patch: np.ndarray) -> tuple[torch.Tensor, np.
     # F.pad consumes dimensions in reverse order (x, y, z).
     for lower, upper in zip(before[::-1], after[::-1]):
         padding.extend([int(lower), int(upper)])
-    tensor = F.pad(torch.from_numpy(data[None]), padding)
+    # nnXNet may return a read-only view from a compressed NumPy cache. Make a
+    # writable contiguous copy before handing it to torch.
+    tensor = F.pad(torch.from_numpy(np.ascontiguousarray(data[None])), padding)
     return tensor, before, after
 
 
@@ -267,7 +269,15 @@ def main() -> None:
                 case_rows.append(json.loads(json_path.read_text()))
                 continue
             aneurysm, vessel, properties = infer_case(aneurysm_trainer, vessel_trainer, dataset_val, case, patch)
-            np.savez_compressed(npz_path, aneurysm_probability=aneurysm, vessel_probability=vessel)
+            # Atomic replacement prevents an interrupted GPU job from leaving
+            # a truncated .npz that a resumed run would mistake for a cache.
+            temporary_npz = npz_path.with_suffix(".partial.npz")
+            np.savez_compressed(
+                temporary_npz,
+                aneurysm_probability=aneurysm,
+                vessel_probability=vessel,
+            )
+            temporary_npz.replace(npz_path)
             transform_path = transform_dir / f"{case}.json"
             transform = load_transform(transform_path)
             case_meta = {
@@ -282,7 +292,9 @@ def main() -> None:
                 "source_origin_xyz": transform.get("source_origin_xyz"),
                 "source_direction": transform.get("source_direction"),
             }
-            json_path.write_text(json.dumps(case_meta, indent=2) + "\n")
+            temporary_json = json_path.with_suffix(".partial.json")
+            temporary_json.write_text(json.dumps(case_meta, indent=2) + "\n")
+            temporary_json.replace(json_path)
             case_rows.append(case_meta)
             print(f"fold={fold} case={case} saved {index}/{len(keys)}", flush=True)
         del vessel_trainer, aneurysm_trainer
