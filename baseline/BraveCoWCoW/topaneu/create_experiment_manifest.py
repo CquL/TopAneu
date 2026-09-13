@@ -212,11 +212,13 @@ def build_manifest(args: argparse.Namespace) -> dict[str, Any]:
             "requirements_file": file_info(requirements, hash_file=True) if requirements.is_file() else None,
             "git": git_info(evaluator_git_root),
             "implementation": "evaluation_function + evaluation_aggregation + evaluation_average",
-            "metrics": ["PRECISION", "RECALL", "MCC", "DICE", "HD95", "VOLSIM"],
+            "metrics": ["PRECISION", "RECALL", "F1", "MCC", "DICE", "HD95", "VOLSIM"],
             "notes": {
                 "class_count": 52,
-                "empty_class_values": "DICE/HD95/VOLSIM are zero when both prediction and GT are empty; only non-TN classes contribute to these averages",
-                "hd95": "normalized by image-array diagonal; lower is better",
+                "detection": "class presence based; a location is TP when present in both prediction and GT",
+                "empty_class_values": "Segmentation metrics are NaN for true negatives and omitted from class means",
+                "f1": "computed per location from aggregated TP/FP/FN, then averaged across valid locations",
+                "hd95": "physical surface distance in millimetres using image spacing; empty mismatch uses official 290 mm bound; lower is better",
             },
         },
         "data": {
@@ -236,7 +238,9 @@ def build_manifest(args: argparse.Namespace) -> dict[str, Any]:
         },
         "preprocessing": {
             "target_shape_zyx": [160, 160, 160],
-            "target_spacing_xyz_mm": [1.0, 0.55, 0.5],
+            "stage1_target_spacing_xyz_mm": [1.0, 0.55, 0.5],
+            "stage2_network_shape_zyx": [160, 160, 160],
+            "stage2_stored_spacing_xyz_mm": [1.0, 1.0, 1.0],
             "normalization": "per-ROI z-score in submission inference; nnXNet plans use ZScoreNormalization",
             "roi": {
                 "source": "Stage 1 publisher 2D vessel-box model",
