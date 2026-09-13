@@ -276,6 +276,17 @@ def build_manifest(args: argparse.Namespace) -> dict[str, Any]:
             "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", "unset"),
         },
     }
+    # Results are optional because a fresh P0 manifest is normally created
+    # before OOF evaluation. When supplied, their content hashes make the
+    # reported metrics traceable to the exact artifact used.
+    if args.evaluation_result:
+        manifest["evaluation_result"] = file_info(
+            args.evaluation_result, hash_file=True,
+        )
+    if args.leaderboard_result:
+        manifest["leaderboard_result"] = file_info(
+            args.leaderboard_result, hash_file=True,
+        )
     return manifest
 
 
@@ -293,6 +304,8 @@ def main() -> int:
     parser.add_argument("--aneurysm-threshold", type=float, default=0.10)
     parser.add_argument("--min-component-voxels", type=int, default=1)
     parser.add_argument("--hash-checkpoints", action="store_true", help="Hash large checkpoint files; can take several minutes")
+    parser.add_argument("--evaluation-result", type=Path, default=None, help="Optional local official-evaluator JSON/CSV to record")
+    parser.add_argument("--leaderboard-result", type=Path, default=None, help="Optional challenge leaderboard result artifact to record")
     parser.add_argument("--force", action="store_true", help="Replace an existing manifest")
     args = parser.parse_args()
     if not 0 <= args.aneurysm_threshold <= 1:
@@ -301,9 +314,15 @@ def main() -> int:
         parser.error("--min-component-voxels must be >= 0")
     manifest = build_manifest(args)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, default=_json_default) + "\n")
+    serialized = json.dumps(manifest, ensure_ascii=False, indent=2, default=_json_default) + "\n"
+    args.output.write_text(serialized)
+    # Sidecar hash lets a copied manifest be verified without mutating the
+    # JSON to include a self-referential digest.
+    sidecar = args.output.with_name(args.output.name + ".sha256")
+    sidecar.write_text(f"{sha256_file(args.output)}  {args.output.name}\n")
     print(json.dumps({
         "saved": str(args.output),
+        "sha256_sidecar": str(sidecar),
         "manifest_schema": manifest["manifest_schema"],
         "repository_sha": manifest["repository"]["sha"],
         "evaluator_sha256": manifest["official_evaluator"]["source_file"].get("sha256"),
